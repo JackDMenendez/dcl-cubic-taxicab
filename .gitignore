@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.build/
+.stage/
+.vscode/
+.vsisolation/
+*.out
+*_out.txt
