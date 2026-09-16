@@ -4,7 +4,7 @@ Board #32 (031). Run with `C:\Users\jackd\.venv-win\Scripts\python.exe` (Py 3.14
 numpy 2.5.0, scipy 1.18.0, sympy 1.14.0; networkx MISSING).
 Scripts staged in `scratchpad/scripts/`. NOT yet committed to dcl-mathematics.
 
-## Status: 11 of 11 recovered — PASS COMPLETE
+## Status: 12 of 12 recovered — V1.4 pass complete; V1.6 §12 verified
 
 | script | covers | verdict |
 |---|---|---|
@@ -18,6 +18,7 @@ Scripts staged in `scratchpad/scripts/`. NOT yet committed to dcl-mathematics.
 | `isotropy.py` | §9.5 moments + directions | ✅ numbers exact; 🚨 §9.5 route is WRONG (F11) |
 | `confined.py` | §5.6 confined cells | ✅ POST-correction, exact incl. -0.14%; F12, F13 |
 | `biased.py` | §9.6 tilt, time-dilation failure | ✅ exact, all rows; no findings |
+| `diamond_redo.py` | V1.6 §12 alternating tetrahedra | ✅ §12 correct; 🚨 script §2 had 2 bugs (F18/F19) |
 | `reflbias.py` | §9.7 tilt covariance, wall bias | ✅ exact; 🚨 stale docstring (F14), F15 |
 
 ## Verified exactly
@@ -375,6 +376,50 @@ legal"). §5.8 must match it — say "any box", or "any region on which the refl
 defined", not "any shape" — and state the L1-ball fallback. The argument that the
 reflecting cell is *natural rather than tuned* survives for the recommended 5x5x5 cell,
 since a cube is a box; only the sweeping generality needs narrowing.
+
+### F18 [FIXED] — `diamond_redo.py` section 2 was broken; §12.2's table could not have come from it
+Two independent bugs, both now repaired in place:
+
+1. **Only one of two zeros masked.** The FCC structure function equals 1 at `k = 0` AND
+   `k = (pi,pi,pi)` — the index-2 sublattice, which §9.11's own table already records
+   ("12 face -> zeros of E = 2"). Masking only the origin divided by zero and made all of
+   section 2 `inf`/`nan`.
+2. **Unit-spacing gradient on a sublattice.** The walk lives on even-sum sites, so
+   `G(odd) ~ 4e-16` (measured). `|G(r-1) - G(r+1)|/2` samples EMPTY sites and returns ~0
+   even after bug 1 is fixed. Needs spacing 2: `|G(r-2) - G(r+2)|/4`.
+
+**§12.2's numbers are nonetheless CORRECT.** Repaired run gives r^2 E = 0.673942 / 0.652278
+/ 0.644151 / 0.635192 / 0.625502 at r* = 8/12/16/24/32 against the document's 0.674055 /
+0.652660 / 0.645068 / 0.638389 / 0.633427 — same convergence to **2/pi = 0.636620**, same
+large-r sag from torus wrap. The chain confirms: naive 3/(2 pi <|s|^2>) with
+<|s|^2> = (3/4)*2 = 1.5 gives 1/pi; **x2 for the index-2 sublattice** gives 2/pi; and
+r = 2r* doubles again to **4/pi = 1.273240**, exactly **8/3** times the 6-axial 3/(2pi).
+
+### F19 [FIXED] — the script's own predictions contradicted §12.2 by 8x
+`predicted coefficient = 1/pi` omitted the index-2 sublattice factor (correct: 2/pi), and
+`"in ORIGINAL lattice units the coefficient halves: 1/(2pi) = 0.159155"` was wrong in
+DIRECTION (r = 2r* means C = 2C*, it doubles) and in base. Against the document's correct
+4/pi = 1.273240 that line is off by a factor of **8**. Document right, script wrong —
+the same direction as F16 (`cellnoise.py`), not the F1-F15 direction.
+
+### F20 — §12 CLOSES board #37, and F8/F9 predicted it
+**Board #37 existed because V1.4's motivation for the architecture switch was asserted, not
+measured** — T^3_diamond's moments were never computed. §12.5 computes them:
+**-44.44% against the reflecting 5x5x5 cell's -0.14%**, a factor of 317. Verified exactly
+(covariance isotropic to 7.4e-19, <n^4> = 1/3). The isotropy case for the switch is now made
+on the same footing. **#37 can close.**
+
+Two verification-pass findings predicted this section:
+- **F9** found the two drift-free inversion-breaking subsets of the body shell ARE the
+  tetrahedra. §12 confirms independently: "vector sum = (0,0,0) -> a full tetrahedron
+  admits no drift."
+- **F8's identity SUBSUMES §12.6.** That section argues the tetrahedron is not
+  inversion-closed, so §8.5's argument fails, and the no-go survives "by the transitivity of
+  the tetrahedral group rather than by inversion — a DIFFERENT symmetry, which makes it
+  stronger." But F8 established `q(V) = (1,1,1).V` exactly on this stencil, so net charge
+  = `(1,1,1).(vector sum)` = `(1,1,1).(0,0,0)` = 0. **Same mechanism, uniformly** — not a
+  second argument. One identity covers the inversion-closed shells and the tetrahedra
+  together, which is simpler and stronger than presenting two. Fold §12.6 into §8.5.
 
 ## Open question for the user
 Whether PM commits these to dcl-mathematics directly or hands them to that session
